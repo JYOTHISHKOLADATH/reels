@@ -18,11 +18,12 @@ class CourseReelController extends GetxController {
   Future<void> fetchReels(int userId) async {
     try {
       isLoading(true);
+
       print("Sending API request...");
       var reels = await _apiService.fetchCourseReels(userId);
       print("API response received.");
       courseReels.assignAll(reels);
-      await _initializeVideoControllers();
+      // await _initializeVideoControllers();
       isLoading(false);
     } catch (e) {
       print("Error fetching course reels: $e");
@@ -30,31 +31,31 @@ class CourseReelController extends GetxController {
     }
   }
 
-  Future<void> _initializeVideoControllers() async {
-    print("Initializing video controllers...");
-    List<VideoPlayerController> controllers = [];
-    for (var reel in courseReels) {
-      String videoUrl = "https://xianinfotech.in/edxera/public/${reel.courseReelVideo}";
-      print("Initializing video: $videoUrl");
-      var controller = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
-      try {
-        await controller.initialize();
-        print("Video initialized: $videoUrl");
-        controllers.add(controller);
-      } catch (e) {
-        print("Error initializing video: $videoUrl - $e");
-      }
-    }
-    videoControllers.assignAll(controllers);
-  }
+  // Future<void> _initializeVideoControllers() async {
+  //   print("Initializing video controllers...");
+  //   List<VideoPlayerController> controllers = [];
+  //   for (var reel in courseReels) {
+  //     String videoUrl = "https://xianinfotech.in/edxera/public/${reel.courseReelVideo}";
+  //     print("Initializing video: $videoUrl");
+  //     var controller = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
+  //     try {
+  //       await controller.initialize();
+  //       print("Video initialized: $videoUrl");
+  //       controllers.add(controller);
+  //     } catch (e) {
+  //       print("Error initializing video: $videoUrl - $e");
+  //     }
+  //   }
+  //   videoControllers.assignAll(controllers);
+  // }
 
-  bool isVideoInitialized(int index) {
-    bool initialized = videoControllers[index].value.isInitialized;
-    if (initialized) {
-      print("Video at index $index is initialized.");
-    } else {
-      print("Video at index $index is NOT initialized.");
-    }
-    return initialized;
-  }
+  // bool isVideoInitialized(int index) {
+  //   bool initialized = videoControllers[index].value.isInitialized;
+  //   if (initialized) {
+  //     print("Video at index $index is initialized.");
+  //   } else {
+  //     print("Video at index $index is NOT initialized.");
+  //   }
+  //   return initialized;
+  // }
 }

@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:reels/controller/course_reel_controller.dart';
+import 'package:reels/service/api_service.dart';
+import 'package:reels/widgets/commentsection.dart';
+import 'package:reels/widgets/liked_users.dart';
 import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:get/get.dart';
+
+import '../model/seecomments_model.dart';
 
 class ReelsScreen extends StatefulWidget {
   @override
@@ -26,10 +31,21 @@ class _ReelsScreenState extends State<ReelsScreen> {
     print("Page changed to index $index.");
     // Pause all other videos
     for (var ctrl in controller.videoControllers) {
-      ctrl.pause();
+      if (ctrl.value.isPlaying) {
+        ctrl.pause();
+      }
     }
     // Play the current video
     controller.videoControllers[index].play();
+  }
+
+  void togglePlayPause(int index) {
+    if (controller.videoControllers[index].value.isPlaying) {
+      controller.videoControllers[index].pause();
+    } else {
+      controller.videoControllers[index].play();
+    }
+    setState(() {});
   }
 
   @override
@@ -54,17 +70,28 @@ class _ReelsScreenState extends State<ReelsScreen> {
           onPageChanged: _onPageChanged,
           itemBuilder: (context, index) {
             print("Building video player for index $index...");
+            // Initialize the video player with the local asset for every index
+            if (controller.videoControllers.length <= index) {
+              controller.videoControllers.add(
+                VideoPlayerController.asset('assets/reel/samplereel.mp4')..initialize().then((_) {
+                  setState(() {});
+                }),
+              );
+            }
+
             return Stack(
               alignment: Alignment.bottomLeft,
               children: [
                 // Check if video is initialized or not
                 controller.videoControllers.length > index &&
                     controller.videoControllers[index].value.isInitialized
-                    ? SizedBox.expand(
-                  child: VideoPlayer(controller.videoControllers[index]),
+                    ? GestureDetector(
+                  onTap: () => togglePlayPause(index), // Toggle play/pause on tap
+                  child: SizedBox.expand(
+                    child: VideoPlayer(controller.videoControllers[index]),
+                  ),
                 )
-                    :
-                Stack(
+                    : Stack(
                   alignment: Alignment.center,
                   children: [
                     // Show thumbnail while the video is loading
@@ -114,14 +141,20 @@ class _ReelsScreenState extends State<ReelsScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildIconWithCount(
-                    isLiked != 1 ? Icons.favorite_border : Icons.favorite, likes),
+                    isLiked != 1 ? Icons.favorite_border : Icons.favorite, likes, onPressed: () {
+                  _showLikedUsersBottomSheet(context, 498, id);
+
+      // _showCommentsBottomSheet(498,6);
+      }),
                 _buildIconWithCount(Icons.comment, comments, onPressed: () {
-                  _showCommentsBottomSheet(index);
+                 _showCommentsBottomSheet(context, 498, id);
+
+                  // _showCommentsBottomSheet(498,6);
                 }),
                 _buildIconWithCount(Icons.visibility_outlined, views),
                 Text(
                   "Id : $id",
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: Colors.black),
                 ),
               ],
             ),
@@ -137,7 +170,7 @@ class _ReelsScreenState extends State<ReelsScreen> {
         Padding(
           padding: const EdgeInsets.only(bottom: 10.0),
           child: IconButton(
-            icon: Icon(icon, color: Colors.white70, size: 30),
+            icon: Icon(icon, color: Colors.black, size: 30),
             onPressed: onPressed ?? () {},
           ),
         ),
@@ -147,71 +180,29 @@ class _ReelsScreenState extends State<ReelsScreen> {
           child: Center(
             child: Text(
               '$count',
-              style: const TextStyle(color: Colors.white60, fontSize: 16),
+              style: const TextStyle(color: Colors.black, fontSize: 16),
             ),
           ),
         ),
       ],
     );
   }
-
-  void _showCommentsBottomSheet(int index) {
+  void _showCommentsBottomSheet(BuildContext context, int userId, int courseId) {
     showModalBottomSheet(
       context: context,
-      builder: (context) {
-        return Container(
-          color: Colors.black,
-          height: 400,
-          child: Column(
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  "Comments",
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: 4, // For now, 4 dummy comments
-                  itemBuilder: (context, commentIndex) {
-                    return ListTile(
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10),
-                      title: Text(
-                        "User $commentIndex",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      subtitle: Text(
-                        "This is a dummy comment for reel $index.",
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              // Comment input field
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: TextField(
-                  style: TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.grey[800],
-                    hintText: "Add a comment...",
-                    hintStyle: TextStyle(color: Colors.white60),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+      backgroundColor: Colors.transparent,
+      builder: (context) => CommentsBottomSheet(userId: userId, courseId: courseId),
     );
   }
+
+  void _showLikedUsersBottomSheet(BuildContext context, int userId, int courseId) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => LikedUsersBottomSheet(userId: userId, courseId: courseId),
+    );
+  }
+
+
+
 }
